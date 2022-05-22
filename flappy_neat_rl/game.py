@@ -1,0 +1,1 @@
+# input player, player amount
