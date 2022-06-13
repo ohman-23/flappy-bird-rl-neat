@@ -23,6 +23,10 @@ class Bird(Sprite):
 
         # set player object
         self.player = player
+
+        # state variables
+        self.alive = True
+        self.state_vector = []
     
     def _apply_gravity(self):
         self.velocity = Config.GRAVITY_LIMIT if self.velocity > Config.GRAVITY_LIMIT else self.velocity+Config.GRAVITY
@@ -33,9 +37,9 @@ class Bird(Sprite):
             self.rect.top = 0
             self.velocity = 0
     
-    def update(self, GameInstance):
-        if not GameInstance.game_over:
-            if GameInstance.game_started:
+    def update(self, game_instance):
+        if not game_instance.game_over:
+            if game_instance.game_started:
                 self._apply_gravity()
 
             # TODO - figure out how to pass in input vectors to NN
@@ -46,7 +50,7 @@ class Bird(Sprite):
                     self.velocity -= Config.JUMP_STRENGTH
 
             if player_type == PlayerType.NEURAL_NETWORK:
-                if self.player.jump():
+                if self.player.jump(input_vector=self.state_vector):
                     self.velocity -= Config.JUMP_STRENGTH
             # handle the animation of the bird
             self.counter += 1
@@ -85,3 +89,23 @@ class Button():
         if self.rect.collidepoint(pos) and pygame.mouse.get_pressed()[0]:
             action = True
         return action    
+
+class Pipe(Sprite):
+    def __init__(self, x, y, bottom_pipe=True):
+        Sprite.__init__(self) # this must be done in this format
+        self.image = pygame.image.load(f"{Config.IMG_PATH}/pipe.png")
+        self.is_bottom_pipe = bottom_pipe
+        if bottom_pipe:
+            self.rect = self.image.get_rect()
+            self.rect.topleft = [x,y+int(Config.PIPE_GAP/2)]
+        else:
+            # given the pipe is coming from the top, we need to flips the original image on the y axis
+            self.image = pygame.transform.flip(self.image, False, True)
+            self.rect = self.image.get_rect()
+            self.rect.bottomleft = [x,y-int(Config.PIPE_GAP/2)]
+    
+    def update(self, GameInstance):
+        if not GameInstance.game_over:
+            self.rect.x -= Config.SCROLL_SPEED
+            if self.rect.right < 0:
+                self.kill() # reduce buffer holding pipes by deleting them once they're off screen

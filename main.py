@@ -1,4 +1,2 @@
 import argparse
-from config import Config
-
-
+from flappy_neat_rl.config import Config

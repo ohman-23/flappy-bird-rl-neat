@@ -16,7 +16,7 @@ class BirdNN:
         if self.hidden_layers is None:
             self.hidden_layers = 1
         if self.inner_dims is None:
-            self.inner_dims = [6]
+            self.inner_dims = [3]
         if self.activation is None:
             self.activation = 'relu'
         if self.weights is None:
@@ -103,7 +103,9 @@ class BirdNNPlayer(Player):
         input_vector = kwargs.get("input_vector", None)
         if input_vector is None:
             raise BaseException("Neural Network requires an input vector")
-        output = self.neural_network.forward(input_vector)
+        if input_vector:
+            # accounts for case where there are no pipes to compare distance
+            output = self.neural_network.forward(input_vector)
         return True if output > 0.5 else False 
 
     def mate(self, other_player):

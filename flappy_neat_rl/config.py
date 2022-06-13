@@ -1,5 +1,5 @@
 class Config:
-    IMG_PATH = "img/"
+    IMG_PATH = "images/"
     SCROLL_SPEED = 4
     FPS = 60
     FLAP_COOLDOWN = 5
