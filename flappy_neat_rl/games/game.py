@@ -150,4 +150,3 @@ class Game(ABC):
                 if not play_again:
                     run = False
             pygame.display.update()
-        pygame.quit()

@@ -46,20 +46,29 @@ class Bird(Sprite):
     def update_state_vector(self, vector):
         self.state_vector = vector
 
+    def check_jump(self):
+        player_type = self.player.method()
+        if player_type == PlayerType.HUMAN:
+            if self.player.jump():
+                return True
+
+        elif player_type == PlayerType.NEURAL_NETWORK:
+            if self.player.jump(input_vector=self.state_vector):
+                return True
+
+        elif player_type == PlayerType.NEAT:
+            if self.player.jump(input_vector=self.state_vector):
+                return True
+
     def update(self, game_instance):
         if not game_instance.game_over:
             if game_instance.game_started:
                 self._apply_gravity()
 
             # jump handling
-            player_type = self.player.method()
-            if player_type == PlayerType.HUMAN:
-                if self.player.jump():
-                    self.velocity -= Config.JUMP_STRENGTH
+            if self.check_jump():
+                self.velocity -= Config.JUMP_STRENGTH
 
-            if player_type == PlayerType.NEURAL_NETWORK:
-                if self.player.jump(input_vector=self.state_vector):
-                    self.velocity -= Config.JUMP_STRENGTH
             # handle the animation of the bird
             self.counter += 1
             if self.counter >= Config.FLAP_COOLDOWN:

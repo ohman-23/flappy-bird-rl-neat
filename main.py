@@ -1,9 +1,12 @@
 import argparse
 import os
 
+import pygame
+
 from flappy_neat_rl.config import Config, InputConfig
 from flappy_neat_rl.enums import GameType
-from flappy_neat_rl.games.game_classes import HumanPlayableGame, NEATGenerationGame
+from flappy_neat_rl.games.game_classes import GeneticAlgorithmGame, HumanPlayableGame
+from flappy_neat_rl.neat.invoke_neat import NEATRunner
 
 # NOTE: Activate this environment variable if you are running this progame with WSL and XLaunch
 # os.environ["SDL_VIDEODRIVER"] = "x11"
@@ -33,10 +36,14 @@ def main():
     if config.game_type == GameType.PLAY_GAME:
         # create logic to play a game
         HumanPlayableGame().run()
+    elif config.game_type == GameType.PERFORM_GA:
+        # create logic to run a game
+        GeneticAlgorithmGame(config).run()
     elif config.game_type == GameType.PERFORM_NEAT:
         # create logic to run a game
-        NEATGenerationGame(config).run()
+        NEATRunner.run()
 
 
 if __name__ == "__main__":
     main()
+    pygame.quit()

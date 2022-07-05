@@ -1,3 +1,4 @@
+import neat
 import numpy as np
 import pygame
 from flappy_neat_rl.enums import PlayerType
@@ -177,3 +178,27 @@ class BirdNNPlayer(Player):
 
     def method(self):
         return PlayerType.NEURAL_NETWORK
+
+
+class BirdNEATPlayer(Player):
+    def __init__(self, genome, neat_config):
+        self.past_score = 0
+        self.genome = genome
+        self.nn = neat.nn.FeedForwardNetwork.create(self.genome, neat_config)
+
+        # set fitness
+        self.genome.fitness = 0
+
+    def jump(self, *args, **kwargs):
+        input_vector = kwargs.get("input_vector", None)
+        if input_vector is None:
+            raise ValueError("NEAT requires an input vector")
+
+        output = self.nn.activate(input_vector)
+        return True if output[0] > 0.5 else False
+
+    def update_fitness(self, val):
+        self.genome.fitness += val
+
+    def method(self):
+        return PlayerType.NEAT

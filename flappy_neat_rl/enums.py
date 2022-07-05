@@ -9,10 +9,12 @@ class BaseEnum(Enum):
 class PlayerType(Enum):
     HUMAN = 0
     NEURAL_NETWORK = 1
+    NEAT = 2
 
 
 class GameType(BaseEnum):
     PLAY_GAME = "PLAY"
+    PERFORM_GA = "GENETIC"
     PERFORM_NEAT = "NEAT"
     VIEW_RESULT = "VIEW_AI"
 

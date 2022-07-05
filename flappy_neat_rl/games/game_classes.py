@@ -2,11 +2,15 @@ import random
 from typing import List
 
 import numpy as np
-import pygame
 from flappy_neat_rl.config import Config, InputConfig
 from flappy_neat_rl.enums import GameType
 from flappy_neat_rl.games.game import Game
-from flappy_neat_rl.players.player_classes import BirdHumanPlayer, BirdNN, BirdNNPlayer
+from flappy_neat_rl.players.player_classes import (
+    BirdHumanPlayer,
+    BirdNEATPlayer,
+    BirdNN,
+    BirdNNPlayer,
+)
 from flappy_neat_rl.sprites import Bird, Pipe
 from flappy_neat_rl.utils import bird_to_pipe_distance, bird_to_pipe_xy, norm_vector
 from pygame.sprite import Group, Sprite
@@ -64,9 +68,9 @@ class HumanPlayableGame(Game):
 
 
 # NOTE: you will have to find a place to save the distace vector for all of the birds!
-class NEATGenerationGame(Game):
+class GeneticAlgorithmGame(Game):
     def __init__(self, config: InputConfig):
-        super(NEATGenerationGame, self).__init__(GameType.PERFORM_NEAT)
+        super(GeneticAlgorithmGame, self).__init__(GameType.PERFORM_GA)
         self.config = config
         self.fallen_birds = []
         self.new_generation_weights = []
@@ -104,12 +108,6 @@ class NEATGenerationGame(Game):
             if bird.rect.top == Config.CEILING_HEIGHT:
                 bird.player.update_fitness(-1)
                 self._handle_bird_death(bird)
-
-            # if bird.rect.top == Config.CEILING_HEIGHT:
-            #     self._handle_bird_death(bird)
-
-            bird_y_coord = bird.rect.center[1]
-            # check if the main bird has hit the pipe closest to the bird (aka first-index pipe)
 
             bottom_closest_pipe = pipe_group.sprites()[0]
             top_closest_pipe = pipe_group.sprites()[1]
@@ -185,6 +183,71 @@ class NEATGenerationGame(Game):
         # this has to be present for the game to immediately begin after reset
         self.game_instance.game_started = True
         self.game_instance.last_pipe_generation = 0
+
+
+class NEATGame(Game):
+    def __init__(self, genomes, neat_config):
+        super(NEATGame, self).__init__(GameType.PERFORM_NEAT)
+        self.genomes = genomes
+        self.config = neat_config
+
+        # this needs to be set so in game effects are applied immediately
+        self.game_instance.game_started = True
+
+    def create_bird_sprites(self, bird_group, **kwargs):
+        for genome_id, genome in self.genomes:
+
+            ai_player = BirdNEATPlayer(genome, self.config)
+            bird_group.add(Bird(100, random.randint(10, 500), ai_player))
+
+    def _handle_bird_death(self, bird):
+        bird.kill()
+
+    def detect_and_handle_collisons(self, bird_group, pipe_group):
+        for bird in bird_group.sprites():
+            # check if the main bird has hit the bottom of the screen
+            # We do not want birds who hit the top of the screen to move on
+            if bird.rect.bottom > Config.FLOOR_HEIGHT - 5:
+                bird.player.update_fitness(-1)
+                self._handle_bird_death(bird)
+
+            if bird.rect.top == Config.CEILING_HEIGHT:
+                bird.player.update_fitness(-1)
+                self._handle_bird_death(bird)
+
+            # check if the main bird has hit the pipe closest to the bird (aka first-index pipe)
+
+            bottom_closest_pipe = pipe_group.sprites()[0]
+            top_closest_pipe = pipe_group.sprites()[1]
+            if bird.check_collision(bottom_closest_pipe) or bird.check_collision(top_closest_pipe):
+                self._handle_bird_death(bird)
+
+            # give bird small reward for staying alive:
+            bird.player.update_fitness(0.001)
+
+            # check if bird has made it through a pipe
+            if self.game_instance.score > bird.player.past_score:
+                bird.player.past_score = self.game_instance.score
+                bird.player.update_fitness(1)
+
+            # bird is still alive, so update the state vector for the bird NN (this helps it)
+            # to determine whether to jump or not
+            bottom_x, bottom_y = bird_to_pipe_xy(bird, bottom_closest_pipe)
+            top_x, top_y = bird_to_pipe_xy(bird, top_closest_pipe)
+
+            # update internal state vector
+            bird.state_vector = (bird.velocity, top_x, top_y, bottom_y)
+
+        if not bird_group:
+            self.game_instance.game_over = True
+            self.game_instance.game_started = False
+
+    def perform_game_clean_up(self, *args, **kwargs):
+        # we want to destroy this game instance and have the NEAT package update its genomes
+        return False
+
+    def reset_game(self):
+        pass
 
 
 class AIDemoGame(Game):
